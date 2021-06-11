@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastisearch-data
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: elastisearch-data
+  template:
+    metadata:
+      labels:
+        app: elastisearch-data
+    spec:
+      containers:
+      - name: elastisearch
+        image: elasticsearch:7.12.0
+        resources:
+          requests:
+            memory: 1G
+            cpu: 500m
+          limits:
+            memory: 2G
+            cpu: 1000m
+        ports:
+        - containerPort: 9200
+        volumeMounts:
+        - name: elastisearch-config-data
+          mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+          subPath: elasticsearch.yml
+        - name: elastisearch-jvm-config
+          mountPath: /usr/share/elasticsearch/config/jvm.options
+          subPath: jvm.options
+        - name: elastisearch-data
+          mountPath: /var/lib/elastisearch
+        - name: elastisearch-logs
+          mountPath: /var/log/elastisearch
+      volumes:
+      - name: elastisearch-config-data
+        configMap:
+          defaultMode: 420
+          name: elastisearch-config
+      - name: elastisearch-jvm-config
+        configMap:
+          defaultMode: 420
+          name: elastisearch-jvm-config
+      - name: elastisearch-data
+        emptyDir: {}
+      - name: elastisearch-logs
+        emptyDir: {}

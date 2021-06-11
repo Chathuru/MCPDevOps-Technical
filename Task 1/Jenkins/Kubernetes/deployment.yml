@@ -1,0 +1,28 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jennkins
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jennkins
+  template:
+    metadata:
+      labels:
+        app: jennkins
+    spec:
+      containers:
+      - name: jennkins
+        image: IMAGE_NAME
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+        - name: casc-config
+          mountPath: /var/jenkins_home/casc.yml
+          subPath: casc.yml
+      volumes:
+      - name: casc-config
+        configMap:
+          defaultMode: 420
+          name: casc-config

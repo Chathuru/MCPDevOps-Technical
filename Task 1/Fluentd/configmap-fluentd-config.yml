@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  fluent.conf: |
+    @include 'disable'
+    @include 'disable'
+    @include kubernetes.conf
+    @include conf.d/*.conf
+
+    <match **>
+      @type elasticsearch
+      @id out_es
+      @log_level info
+      include_tag_key true
+      host "#{ENV['FLUENT_ELASTICSEARCH_HOST']}"
+      port "#{ENV['FLUENT_ELASTICSEARCH_PORT']}"
+      path "#{ENV['FLUENT_ELASTICSEARCH_PATH']}"
+      scheme "#{ENV['FLUENT_ELASTICSEARCH_SCHEME'] || 'http'}"
+      
+      reload_connections "#{ENV['FLUENT_ELASTICSEARCH_RELOAD_CONNECTIONS'] || 'false'}"
+      reconnect_on_error "#{ENV['FLUENT_ELASTICSEARCH_RECONNECT_ON_ERROR'] || 'true'}"
+      reload_on_failure "#{ENV['FLUENT_ELASTICSEARCH_RELOAD_ON_FAILURE'] || 'true'}"
+      log_es_400_reason "#{ENV['FLUENT_ELASTICSEARCH_LOG_ES_400_REASON'] || 'false'}"
+      
+      logstash_prefix "fluentd"
+      logstash_dateformat '%Y.%m.%d'
+      logstash_format 'true'
+      
+      template_name 'new-template'
+      template_file '/fluentd/etc/template.json'
+      template_overwrite 'true'
+      
+      sniffer_class_name 'Fluent::Plugin::ElasticsearchSimpleSniffer'
+      request_timeout '5s'
+      application_name "chathuru"
+      #application_name "#{ ${record['kubernetes']['namespace_name']} || 'namespace' }"
+      suppress_type_name 'true'
+      type_name fluentd
+      #000001
+      #index_date_pattern "now/d-000001"
+      rollover_index true
+
+      #enable_ilm 'true'
+      #ilm_policy_id 'log-rotation'
+      #ilm_policy_overwrite 'false'
+      #ilm_policy use_default {"policy":{"phases":{"hot":{"min_age":"0ms","actions":{"rollover":{"max_size":"5mb","max_age":"5m"},"set_priority":{"priority":100}}},"delete":{"min_age":"10m","actions":{"delete":{"delete_searchable_snapshot":true}}}}}}
+
+      <buffer>
+        flush_thread_count "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_THREAD_COUNT'] || '8'}"
+        flush_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_FLUSH_INTERVAL'] || '5s'}"
+        chunk_limit_size "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_CHUNK_LIMIT_SIZE'] || '2M'}"
+        queue_limit_length "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_QUEUE_LIMIT_LENGTH'] || '32'}"
+        retry_max_interval "#{ENV['FLUENT_ELASTICSEARCH_BUFFER_RETRY_MAX_INTERVAL'] || '30'}"
+        retry_forever true
+      </buffer>
+    </match>
